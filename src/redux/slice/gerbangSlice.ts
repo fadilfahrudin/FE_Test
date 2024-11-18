@@ -9,9 +9,21 @@ export const addGerbang = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            console.log(gerbangData)
             await axios.post(`${config.BASE_URL}/gerbangs`, gerbangData);
-
+            window.location.reload()
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data || 'Error occurred');
+        }
+    }
+);
+export const editGerbang = createAsyncThunk(
+    'gerbangs/editGerbang',
+    async (
+        gerbangData: { id: number; IdCabang: number; NamaGerbang: string; NamaCabang: string },
+        { rejectWithValue }
+    ) => {
+        try {
+            await axios.patch(`${config.BASE_URL}/gerbangs`, gerbangData);
             window.location.reload()
         } catch (error: any) {
             return rejectWithValue(error.response?.data || 'Error occurred');

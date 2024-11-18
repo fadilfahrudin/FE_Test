@@ -11,10 +11,13 @@ export const gerbangApi: any = createApi({
         getGerbangs: builder.query({
             query: ({limit, page}) => `/gerbangs?limit=${limit}&page=${page}`,
         }),
+        getGerbangById: builder.query({
+            query: ({id, IdCabang}) => `/gerbangs?id=${id}&IdCabang=${IdCabang}`,
+        }),
         getGerbangsByKeywords: builder.query({
             query: ({keywords='', limit=5, page=1}) => `/gerbangs?limit=${limit}&page=${page}&NamaGerbang=%${keywords}%`,
         })
     })
 })
 
-export const { useGetGerbangsQuery } = gerbangApi
+export const { useGetGerbangsQuery, useGetGerbangByIdQuery, useGetGerbangByKeywordsQuery } = gerbangApi

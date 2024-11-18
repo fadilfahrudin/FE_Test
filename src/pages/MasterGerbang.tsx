@@ -1,9 +1,10 @@
 import { EyeIcon, PencilSquareIcon, PlusCircleIcon, TrashIcon } from '@heroicons/react/24/outline'
 import React, { useEffect, useState } from 'react'
 import Pagination from '../components/Pagination'
-import { useGetGerbangsQuery } from '../redux/services/gerbangService';
+import { useGetGerbangByIdQuery, useGetGerbangsQuery } from '../redux/services/gerbangService';
 import { useAppDispatch } from '../utils/reduxHooks';
-import { addGerbang, deleteGerbang } from '../redux/slice/gerbangSlice';
+import { addGerbang, deleteGerbang, editGerbang } from '../redux/slice/gerbangSlice';
+import useRandomId from '../utils/randomIdHooks';
 
 type ActionType = "edit" | "detail" | "tambah" | "delete";
 
@@ -16,16 +17,19 @@ interface PopUpRuasActionProps {
 
 const PopUpRuasAction: React.FC<PopUpRuasActionProps> = ({ setOpen, actionType, id, idCabang }) => {
     const dispatch = useAppDispatch()
-    const [cabang, setCabang] = useState('')
-    const [gerbang, setGerbang] = useState('')
-    // const [form, setForm] = useState({
-    //     id: Number(id),
-    //     IdCabang: Number(idCabang),
-    //     NamaGerbang: '',
-    //     NamaCabang: '',
-    // });
-    const isFormValid = cabang.trim() !== "" && gerbang.trim() !== "";
+    const { data, isSuccess } = useGetGerbangByIdQuery({ id: id, IdCabang: idCabang })
+    const [cabang, setCabang] = useState("")
+    const [gerbang, setGerbang] = useState("")
+    const randomId = useRandomId(6)
 
+    useEffect(() => {
+        if (isSuccess && actionType === "edit" || actionType === "detail") {
+            setCabang(data?.data.rows.rows[0].NamaCabang)
+            setGerbang(data.data.rows.rows[0].NamaGerbang)
+        }
+    },[isSuccess, data])
+
+    // const isFormValid = cabang.trim() !== "" && gerbang.trim() !== "";
     const rendertitle = () => {
         switch (actionType) {
             case "edit":
@@ -45,8 +49,6 @@ const PopUpRuasAction: React.FC<PopUpRuasActionProps> = ({ setOpen, actionType, 
     }
 
 
-
-
     if (actionType === "delete") {
         return (
             <section className='absolute top-0 left-0 z-20 w-full h-screen flex items-center justify-center'>
@@ -62,18 +64,16 @@ const PopUpRuasAction: React.FC<PopUpRuasActionProps> = ({ setOpen, actionType, 
     }
 
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setForm({
-            ...form,
-            NamaCabang: cabang,
-            NamaGerbang: gerbang
-        });
-    };
-
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        dispatch(addGerbang({id: Number(id), IdCabang: Number(idCabang), NamaGerbang: gerbang,NamaCabang: cabang,}));
+        if (actionType === "tambah") {
+            dispatch(addGerbang({ id: randomId, IdCabang: randomId, NamaGerbang: gerbang, NamaCabang: cabang, }));
+            return
+        }
+        if (actionType === "edit") {
+            dispatch(editGerbang({ id: Number(id), IdCabang: Number(idCabang), NamaGerbang: gerbang, NamaCabang: cabang, }));
+            return
+        }
     };
 
     return (
@@ -114,7 +114,7 @@ const PopUpRuasAction: React.FC<PopUpRuasActionProps> = ({ setOpen, actionType, 
                             :
                             <>
                                 <button type='button' onClick={() => setOpen(false)} className='disabled:opacity-50 transition-all ease-in-out disabled:cursor-not-allowed w-full px-4 py-3 bg-red-400 rounded-md font-semibold text-dark shadow-md'>Batal</button>
-                                <button type='submit' disabled={!isFormValid} className='disabled:opacity-50 transition-all ease-in-out disabled:cursor-not-allowed w-full px-4 py-3 bg-yellow rounded-md font-semibold text-dark shadow-md'>Simpan</button>
+                                <button type='submit' className='disabled:opacity-50 transition-all ease-in-out disabled:cursor-not-allowed w-full px-4 py-3 bg-yellow rounded-md font-semibold text-dark shadow-md'>Simpan</button>
                             </>
                     }
                 </div>
@@ -158,7 +158,7 @@ const MasterDataGerbang: React.FC = () => {
 
     useEffect(() => {
         if (isSuccess) {
-            // setPage(data.data.current_page)
+            setPage(data.data.current_page)
             setPages(data.data.total_pages)
         }
     }, [isSuccess, data])

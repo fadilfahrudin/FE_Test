@@ -20,4 +20,4 @@ export const gerbangApi: any = createApi({
     })
 })
 
-export const { useGetGerbangsQuery, useGetGerbangByIdQuery, useGetGerbangByKeywordsQuery } = gerbangApi
+export const { useGetGerbangsQuery, useGetGerbangByIdQuery, useGetGerbangsByKeywordsQuery } = gerbangApi

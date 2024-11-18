@@ -1,7 +1,7 @@
 import { EyeIcon, PencilSquareIcon, PlusCircleIcon, TrashIcon } from '@heroicons/react/24/outline'
 import React, { useEffect, useState } from 'react'
 import Pagination from '../components/Pagination'
-import { useGetGerbangByIdQuery, useGetGerbangsQuery } from '../redux/services/gerbangService';
+import { useGetGerbangByIdQuery, useGetGerbangsByKeywordsQuery, useGetGerbangsQuery } from '../redux/services/gerbangService';
 import { useAppDispatch } from '../utils/reduxHooks';
 import { addGerbang, deleteGerbang, editGerbang } from '../redux/slice/gerbangSlice';
 import useRandomId from '../utils/randomIdHooks';
@@ -23,11 +23,11 @@ const PopUpRuasAction: React.FC<PopUpRuasActionProps> = ({ setOpen, actionType, 
     const randomId = useRandomId(6)
 
     useEffect(() => {
-        if (isSuccess && actionType === "edit" || actionType === "detail") {
+        if (isSuccess && id) {
             setCabang(data?.data.rows.rows[0].NamaCabang)
             setGerbang(data.data.rows.rows[0].NamaGerbang)
         }
-    },[isSuccess, data])
+    }, [isSuccess, data, id])
 
     // const isFormValid = cabang.trim() !== "" && gerbang.trim() !== "";
     const rendertitle = () => {
@@ -49,6 +49,18 @@ const PopUpRuasAction: React.FC<PopUpRuasActionProps> = ({ setOpen, actionType, 
     }
 
 
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (actionType === "tambah") {
+            dispatch(addGerbang({ id: randomId, IdCabang: randomId, NamaGerbang: gerbang, NamaCabang: cabang, }));
+            return
+        }
+        if (actionType === "edit") {
+            dispatch(editGerbang({ id: Number(id), IdCabang: Number(idCabang), NamaGerbang: gerbang, NamaCabang: cabang, }));
+            return
+        }
+    };
+
     if (actionType === "delete") {
         return (
             <section className='absolute top-0 left-0 z-20 w-full h-screen flex items-center justify-center'>
@@ -64,17 +76,7 @@ const PopUpRuasAction: React.FC<PopUpRuasActionProps> = ({ setOpen, actionType, 
     }
 
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (actionType === "tambah") {
-            dispatch(addGerbang({ id: randomId, IdCabang: randomId, NamaGerbang: gerbang, NamaCabang: cabang, }));
-            return
-        }
-        if (actionType === "edit") {
-            dispatch(editGerbang({ id: Number(id), IdCabang: Number(idCabang), NamaGerbang: gerbang, NamaCabang: cabang, }));
-            return
-        }
-    };
+
 
     return (
         <section className='absolute top-0 left-0 z-20 w-full h-screen flex items-center justify-center'>
@@ -110,7 +112,7 @@ const PopUpRuasAction: React.FC<PopUpRuasActionProps> = ({ setOpen, actionType, 
                 <div className='flex gap-2 w-3/4'>
                     {
                         actionType === "detail" ?
-                            <button type='button' onClick={() => setOpen(false)} className='disabled:opacity-50 transition-all ease-in-out disabled:cursor-not-allowed w-full px-4 py-3 bg-blue rounded-md font-semibold text-dark shadow-md'>Tutup</button>
+                            <button type='button' onClick={() => setOpen(false)} className='disabled:opacity-50 transition-all ease-in-out disabled:cursor-not-allowed w-full px-4 py-3 bg-blue rounded-md font-semibold text-light shadow-md'>Tutup</button>
                             :
                             <>
                                 <button type='button' onClick={() => setOpen(false)} className='disabled:opacity-50 transition-all ease-in-out disabled:cursor-not-allowed w-full px-4 py-3 bg-red-400 rounded-md font-semibold text-dark shadow-md'>Batal</button>
@@ -126,18 +128,21 @@ const PopUpRuasAction: React.FC<PopUpRuasActionProps> = ({ setOpen, actionType, 
 const MasterDataGerbang: React.FC = () => {
     const [isPopUpRuas, setIsPopUpRuas] = useState(false);
     const [keywords, setKeywords] = useState('');
-    const [query, setQuery] = useState('');
     const [limit, setLimit] = useState(5);
     const [page, setPage] = useState(1);
     const [pages, setPages] = useState(0);
     const [popUpAction, setPopUpAction] = useState<ActionType>("tambah");
     const [id, setId] = useState(0);
     const [idCabang, setIdCabang] = useState(0);
+    const [dataGerbang, setDataGerbang] = useState([])
     const { data, isSuccess } = useGetGerbangsQuery({ limit, page })
+    const { data: dataQuery, isSuccess: isSuccessQuery } = useGetGerbangsByKeywordsQuery({ limit, page, keywords: keywords })
 
     const queryHandler = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        setQuery(keywords)
+        if (isSuccessQuery) {
+            setDataGerbang(dataQuery.data.rows.rows)
+        }
     }
     const onPageChange = (selected: number) => {
         setPage(selected)
@@ -160,6 +165,7 @@ const MasterDataGerbang: React.FC = () => {
         if (isSuccess) {
             setPage(data.data.current_page)
             setPages(data.data.total_pages)
+            setDataGerbang(data.data.rows.rows)
         }
     }, [isSuccess, data])
     return (
@@ -178,7 +184,7 @@ const MasterDataGerbang: React.FC = () => {
             <button onClick={() => handlePopUpAction('tambah')} className="flex gap-2 items-center rounded-md float-right ms-3 py-2 px-4 bg-yellow shadow-md">Add <PlusCircleIcon className="w-5 h-5" /></button>
             <form className="float-right w-5/12 mb-3" onSubmit={queryHandler}>
                 <div className="flex justify-between">
-                    <input type="text" className="outline-none focus:outline-none focus:shadow-sm transition-all ease-in-out p-2 bg-Light shadow-md rounded-s-md w-full" placeholder="Masukan kata kunci..." aria-label="search data" aria-describedby="search-data" value={keywords} onChange={(e) => setKeywords(e.target.value)} />
+                    <input type="text" className="outline-none focus:outline-none focus:shadow-sm transition-all ease-in-out p-2 bg-Light shadow-md rounded-s-md w-full" placeholder="Masukan nama gerbang..." aria-label="search data" aria-describedby="search-data" value={keywords} onChange={(e) => setKeywords(e.target.value)} />
                     <button className="w-4/12 bg-yellow rounded-e-md shadow-md" type="submit" id="search-data">Search</button>
                 </div>
             </form>
@@ -193,7 +199,7 @@ const MasterDataGerbang: React.FC = () => {
                 </thead>
                 <tbody className='bg-Light shadow-lg  border-4 border-yellow '>
                     {
-                        isSuccess && data.data.rows.rows.map((gerbang, i) => (
+                        isSuccess && dataGerbang.map((gerbang, i) => (
                             <tr key={gerbang.id} className={`${i % 2 === 0 ? 'bg-Light' : 'bg-slate-100'} text-darkBlue font-semibold text-sm`}>
                                 <td colSpan={1} className="px-6 py-4 whitespace-nowrap">{i + 1}</td>
                                 <td colSpan={1} className="px-6 py-4 whitespace-nowrap">{gerbang.NamaCabang}</td>
